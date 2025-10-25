@@ -10,32 +10,8 @@ import static org.assertj.core.api.Assertions.*;
 class UserTest {
 
     @Test
-    @DisplayName("Should create user with constructor and set createdAt")
-    void createUser_WithConstructor_ShouldSetCreatedAt() {
-        // When
-        User user = new User("John Doe", "john@example.com", 30);
-
-        // Then
-        assertThat(user.getCreatedAt()).isNotNull();
-        assertThat(user.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
-    }
-
-    @Test
-    @DisplayName("Should create user with default constructor and null fields")
-    void createUser_DefaultConstructor_ShouldHaveNullFields() {
-        // When
-        User user = new User();
-
-        // Then
-        assertThat(user.getName()).isNull();
-        assertThat(user.getEmail()).isNull();
-        assertThat(user.getAge()).isNull();
-        assertThat(user.getCreatedAt()).isNull();
-    }
-
-    @Test
-    @DisplayName("Should create user with constructor parameters")
-    void createUser_WithParameters_ShouldSetFields() {
+    @DisplayName("Should create user with constructor and set all fields")
+    void createUser_WithConstructor_ShouldSetAllFields() {
         // Given
         String name = "John Doe";
         String email = "john@example.com";
@@ -49,10 +25,25 @@ class UserTest {
         assertThat(user.getEmail()).isEqualTo(email);
         assertThat(user.getAge()).isEqualTo(age);
         assertThat(user.getCreatedAt()).isNotNull();
+        assertThat(user.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
     }
 
     @Test
-    @DisplayName("Should handle null age correctly")
+    @DisplayName("Should create user with default constructor and null fields")
+    void createUser_DefaultConstructor_ShouldHaveNullFields() {
+        // When
+        User user = new User();
+
+        // Then
+        assertThat(user.getId()).isNull();
+        assertThat(user.getName()).isNull();
+        assertThat(user.getEmail()).isNull();
+        assertThat(user.getAge()).isNull();
+        assertThat(user.getCreatedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("Should handle null age in constructor")
     void createUser_WithNullAge_ShouldWork() {
         // When
         User user = new User("John", "john@test.com", null);
@@ -64,179 +55,81 @@ class UserTest {
     }
 
     @Test
-    @DisplayName("Should update user fields correctly")
-    void updateUser_ShouldChangeFields() {
+    @DisplayName("Should update user fields with setters")
+    void updateUser_WithSetters_ShouldChangeFields() {
         // Given
         User user = new User("Old Name", "old@test.com", 25);
+        LocalDateTime newCreatedAt = LocalDateTime.now().minusDays(1);
 
         // When
+        user.setId(1L);
         user.setName("New Name");
         user.setEmail("new@test.com");
         user.setAge(30);
-        user.setCreatedAt(LocalDateTime.now().minusDays(1));
+        user.setCreatedAt(newCreatedAt);
 
         // Then
+        assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getName()).isEqualTo("New Name");
         assertThat(user.getEmail()).isEqualTo("new@test.com");
         assertThat(user.getAge()).isEqualTo(30);
-        assertThat(user.getCreatedAt()).isNotNull();
+        assertThat(user.getCreatedAt()).isEqualTo(newCreatedAt);
     }
 
     @Test
-    @DisplayName("Should generate correct toString representation")
-    void toString_ShouldContainAllFields() {
-        // Given
-        User user = new User("John Doe", "john@example.com", 30);
-        user.setId(1L);
-        LocalDateTime now = LocalDateTime.now();
-        user.setCreatedAt(now);
-
-        // When
-        String toString = user.toString();
-
-        // Then
-        assertThat(toString).contains("John Doe");
-        assertThat(toString).contains("john@example.com");
-        assertThat(toString).contains("30");
-        assertThat(toString).contains("1");
-    }
-
-    @Test
-    @DisplayName("Should handle setters and getters correctly")
-    void settersAndGetters_ShouldWork() {
+    @DisplayName("Should set createdAt on pre-persist if null")
+    void prePersist_WhenCreatedAtIsNull_ShouldSetCurrentTime() {
         // Given
         User user = new User();
-        LocalDateTime createdAt = LocalDateTime.now().minusHours(1);
-
-        // When
-        user.setId(1L);
         user.setName("Test User");
         user.setEmail("test@example.com");
         user.setAge(25);
-        user.setCreatedAt(createdAt);
-
-        // Then
-        assertThat(user.getId()).isEqualTo(1L);
-        assertThat(user.getName()).isEqualTo("Test User");
-        assertThat(user.getEmail()).isEqualTo("test@example.com");
-        assertThat(user.getAge()).isEqualTo(25);
-        assertThat(user.getCreatedAt()).isEqualTo(createdAt);
-    }
-
-    @Test
-    @DisplayName("Should set valid age correctly")
-    void setAge_ValidAges_ShouldWork() {
-        // Given
-        User user = new User();
-
-        // When & Then - min age
-        user.setAge(0);
-        assertThat(user.getAge()).isEqualTo(0);
-
-        // When & Then - normal age
-        user.setAge(25);
-        assertThat(user.getAge()).isEqualTo(25);
-
-        // When & Then - max age
-        user.setAge(150);
-        assertThat(user.getAge()).isEqualTo(150);
-    }
-
-    @Test
-    @DisplayName("Should set null age correctly")
-    void setAge_NullAge_ShouldWork() {
-        // Given
-        User user = new User("John", "john@test.com", 30);
 
         // When
-        user.setAge(null);
+        user.onCreate();
 
         // Then
-        assertThat(user.getAge()).isNull();
+        assertThat(user.getCreatedAt()).isNotNull();
+        assertThat(user.getCreatedAt()).isBeforeOrEqualTo(LocalDateTime.now());
     }
 
     @Test
-    @DisplayName("Should throw exception when setting negative age")
-    void setAge_NegativeAge_ShouldThrowException() {
+    @DisplayName("Should not change createdAt on pre-persist if already set")
+    void prePersist_WhenCreatedAtIsSet_ShouldNotChange() {
         // Given
+        LocalDateTime fixedTime = LocalDateTime.of(2023, 1, 1, 12, 0);
         User user = new User();
+        user.setCreatedAt(fixedTime);
 
-        // When & Then
-        assertThatThrownBy(() -> user.setAge(-1))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Age must be between 0 and 150");
-
-        assertThatThrownBy(() -> user.setAge(-100))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Age must be between 0 and 150");
-    }
-
-    @Test
-    @DisplayName("Should throw exception when setting age above 150")
-    void setAge_AgeAbove150_ShouldThrowException() {
-        // Given
-        User user = new User();
-
-        // When & Then
-        assertThatThrownBy(() -> user.setAge(151))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Age must be between 0 and 150");
-
-        assertThatThrownBy(() -> user.setAge(200))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Age must be between 0 and 150");
-    }
-
-    @Test
-    @DisplayName("Should handle boundary values for age validation")
-    void setAge_BoundaryValues_ShouldWorkCorrectly() {
-        // Given
-        User user = new User();
-
-        // When & Then
-        user.setAge(0);  // min
-        assertThat(user.getAge()).isEqualTo(0);
-
-        user.setAge(150); // max
-        assertThat(user.getAge()).isEqualTo(150);
-
-        assertThatThrownBy(() -> user.setAge(-1))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> user.setAge(151))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @DisplayName("Should preserve other fields when setting invalid age")
-    void setAge_InvalidAge_ShouldNotChangeOtherFields() {
-        // Given
-        User user = new User("John Doe", "john@example.com", 30);
-        user.setId(1L);
-        LocalDateTime originalCreatedAt = user.getCreatedAt();
-
-        // When & Then
-        assertThatThrownBy(() -> user.setAge(-5))
-                .isInstanceOf(IllegalArgumentException.class);
+        // When
+        user.onCreate();
 
         // Then
-        assertThat(user.getId()).isEqualTo(1L);
-        assertThat(user.getName()).isEqualTo("John Doe");
-        assertThat(user.getEmail()).isEqualTo("john@example.com");
-        assertThat(user.getAge()).isEqualTo(30); // возраст остался прежним
-        assertThat(user.getCreatedAt()).isEqualTo(originalCreatedAt);
+        assertThat(user.getCreatedAt()).isEqualTo(fixedTime);
     }
 
     @Test
-    @DisplayName("Should chain age validation in constructor")
-    void constructor_InvalidAge_ShouldThrowException() {
-        // When & Then
-        User user = new User("John", "john@test.com", -1);
+    @DisplayName("Should handle edge cases for age")
+    void createUser_WithEdgeCaseAges_ShouldWork() {
+        // Test minimum age
+        User user1 = new User("User1", "user1@test.com", 0);
+        assertThat(user1.getAge()).isEqualTo(0);
 
-        assertThat(user.getAge()).isEqualTo(-1); // конструктор принимает любое значение
+        // Test reasonable maximum age
+        User user2 = new User("User2", "user2@test.com", 150);
+        assertThat(user2.getAge()).isEqualTo(150);
+    }
 
-        User user2 = new User();
-        assertThatThrownBy(() -> user2.setAge(-1))
-                .isInstanceOf(IllegalArgumentException.class);
+    @Test
+    @DisplayName("Should handle email with special characters")
+    void createUser_WithSpecialEmail_ShouldWork() {
+        // Given
+        String email = "user.name+tag@example.co.uk";
+
+        // When
+        User user = new User("Test User", email, 30);
+
+        // Then
+        assertThat(user.getEmail()).isEqualTo(email);
     }
 }

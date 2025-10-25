@@ -1,7 +1,6 @@
 package org.aston.learning.stage2.entity;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,8 +24,7 @@ public class User {
     private LocalDateTime createdAt;
 
     // Constructs
-    public User() {
-    }
+    public User() {}
 
     public User(String name, String email, Integer age) {
         this.name = name;
@@ -35,54 +33,26 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters
-    public Long getId() {
-        return id;
-    }
+    // Getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public Integer getAge() {
-        return age;
-    }
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
 
-    // Setters
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setAge(Integer age) {
-        if (age != null && (age < 0 || age > 150)) {
-            throw new IllegalArgumentException("Age must be between 0 and 150");
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
         }
-        this.age = age;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("User{id=%d, name='%s', email='%s', age=%d, createdAt=%s}",
-                id, name, email, age, createdAt);
     }
 }
