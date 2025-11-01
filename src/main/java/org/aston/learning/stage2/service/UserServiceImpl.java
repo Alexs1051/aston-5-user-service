@@ -16,10 +16,12 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserEventPublisher userEventPublisher;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, UserEventPublisher userEventPublisher) {
         this.userRepository = userRepository;
+        this.userEventPublisher = userEventPublisher;
     }
 
     @Override
@@ -52,6 +54,10 @@ public class UserServiceImpl implements UserService {
         user.setAge(userRequest.getAge());
 
         User savedUser = userRepository.save(user);
+
+        // Send event to Kafka
+        userEventPublisher.publishUserCreated(savedUser.getEmail(), savedUser.getName());
+
         return convertToResponse(savedUser);
     }
 
@@ -75,10 +81,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found with id: " + id);
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
         userRepository.deleteById(id);
+
+        // Send event to Kafka
+        userEventPublisher.publishUserDeleted(user.getEmail(), user.getName());
     }
 
     private UserResponse convertToResponse(User user) {

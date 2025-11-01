@@ -21,6 +21,9 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private UserEventPublisher userEventPublisher;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -36,6 +39,9 @@ class UserServiceTest {
 
         // When & Then
         assertThatNoException().isThrownBy(() -> userService.createUser(userRequest));
+
+        // Verify that event was published
+        verify(userEventPublisher).publishUserCreated(userRequest.getEmail(), userRequest.getName());
     }
 
     @Test
@@ -50,6 +56,9 @@ class UserServiceTest {
 
         // When & Then
         assertThatNoException().isThrownBy(() -> userService.createUser(userRequest));
+
+        // Verify that event was published
+        verify(userEventPublisher).publishUserCreated(userRequest.getEmail(), userRequest.getName());
     }
 
     @Test
@@ -74,21 +83,41 @@ class UserServiceTest {
     void deleteUser_WithMultipleCalls_ShouldHandleGracefully() {
         // Given
         Long userId = 1L;
+        User userToDelete = new User("Test User", "test@example.com", 25);
+        userToDelete.setId(userId);
 
-        when(userRepository.existsById(userId)).thenReturn(true);
+        // First call setup - user exists
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userToDelete));
         doNothing().when(userRepository).deleteById(userId);
 
-        // When - First call
+        // When - First call (should succeed)
         userService.deleteUser(userId);
 
-        // Then - Second call should fail if user doesn't exist
-        when(userRepository.existsById(userId)).thenReturn(false);
+        // Then - Second call setup - user doesn't exist
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
+        // When & Then - Second call should fail
         assertThatThrownBy(() -> userService.deleteUser(userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("User not found with id: " + userId);
 
-        verify(userRepository, times(2)).existsById(userId);
+        // Verify interactions
+        verify(userRepository, times(2)).findById(userId);
         verify(userRepository, times(1)).deleteById(userId);
+        verify(userEventPublisher, times(1)).publishUserDeleted("test@example.com", "Test User");
+    }
+
+    @Test
+    void updateUser_NonExistingUser_ShouldThrowException() {
+        // Given
+        Long userId = 999L;
+        UserRequest userRequest = new UserRequest("New Name", "new@example.com", 30);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUser(userId, userRequest))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("User not found");
     }
 }
