@@ -1,8 +1,12 @@
 package org.aston.learning.stage2.dto;
 
+import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.server.core.Relation;
+
 import java.time.LocalDateTime;
 
-public class UserResponse {
+@Relation(collectionRelation = "users")
+public class UserResponse extends RepresentationModel<UserResponse> {
     private Long id;
     private String name;
     private String email;
