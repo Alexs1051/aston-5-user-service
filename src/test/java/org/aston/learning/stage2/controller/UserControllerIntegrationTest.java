@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -28,6 +29,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@TestPropertySource(properties = {
+        "spring.cloud.config.enabled=false",
+        "spring.config.import=optional:file:.env[.properties]",
+        "eureka.client.enabled=false"
+})
 class UserControllerIntegrationTest {
 
     @Container
@@ -43,12 +49,13 @@ class UserControllerIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
+        // Database properties
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
 
-        // KAFKA PROPERTIES
+        // Kafka properties
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
         registry.add("spring.kafka.producer.key-serializer",
                 () -> "org.apache.kafka.common.serialization.StringSerializer");
@@ -59,8 +66,6 @@ class UserControllerIntegrationTest {
         registry.add("spring.kafka.consumer.value-deserializer",
                 () -> "org.springframework.kafka.support.serializer.JsonDeserializer");
         registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
-        registry.add("spring.kafka.consumer.properties.spring.json.trusted.packages",
-                () -> "*");
     }
 
     @Autowired
@@ -83,16 +88,13 @@ class UserControllerIntegrationTest {
         UserRequest userRequest = new UserRequest("John Doe", "john@example.com", 30);
 
         // When - Create user
-        String response = mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("John Doe"))
                 .andExpect(jsonPath("$.email").value("john@example.com"))
-                .andExpect(jsonPath("$.age").value(30))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andExpect(jsonPath("$.age").value(30));
 
         // Then - Verify user was saved in database
         List<User> users = userRepository.findAll();

@@ -1,13 +1,18 @@
 package org.aston.learning.stage2.service;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.aston.learning.stage2.dto.UserRequest;
 import org.aston.learning.stage2.dto.UserResponse;
 import org.aston.learning.stage2.entity.User;
 import org.aston.learning.stage2.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,6 +20,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class UserServiceImpl implements UserService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     private final UserRepository userRepository;
     private final UserEventPublisher userEventPublisher;
 
@@ -25,12 +31,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CircuitBreaker(name = "userService", fallbackMethod = "getAllUsersFallback")
+    @Retry(name = "userService")
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public List<UserResponse> getAllUsersFallback(Exception e) {
+        logger.warn("Fallback method called for getAllUsers due to: {}", e.getMessage());
+        return Collections.emptyList();
     }
 
     @Override
