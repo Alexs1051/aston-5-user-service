@@ -1,18 +1,19 @@
-# 6. HTTP, WEB, REST, SOAP
+# 7. Паттерны микросервисной архитектуры
 
 ---
 
 ### Цель работы
-Добавление Swagger-документации и HATEOAS в API.
+Добавить к существующей системе паттерны: gateway api, service discovery, circuit breaker, external configuration - реализации данных паттернов можно найти в модулях spring cloud.
 
-Требования:
-- Задокументировать существующее API (из задания 4) с помощью Swagger (Springdoc OpenAPI), чтобы можно было легко изучить и тестировать API через веб-интерфейс.
-- Добавить поддержку HATEOAS, чтобы API предоставляло ссылки для навигации по ресурсам.
-
-В этом репозитории распологается user-service, notification-service находится в репозитории: https://github.com/Alexs1051/aston-5-notification-service.
+### Список сервисов:
+- https://github.com/Alexs1051/aston-5-user-service
+- https://github.com/Alexs1051/aston-5-notification-service
+- https://github.com/Alexs1051/aston-api-gateway
+- https://github.com/Alexs1051/aston-config-server
+- https://github.com/Alexs1051/aston-eureka-server
 
 ### Результат
-https://github.com/user-attachments/assets/7ca17c39-9c54-44f8-b198-951c654584b1
+https://github.com/user-attachments/assets/8875a409-26a1-46b6-ad38-fcfce1e025d6
 
 #### Тестовое покрытие
 <img width="1759" height="316" alt="Screenshot_7" src="https://github.com/user-attachments/assets/0b1e1e71-b845-4c3c-a126-33fa80b52658" />
